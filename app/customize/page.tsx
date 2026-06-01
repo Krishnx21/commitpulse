@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react';
-import { validateGitHubUsername } from '@/lib/github';
+import { validateGitHubUsername } from '@/lib/validations';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ControlsPanel } from './components/ControlsPanel';

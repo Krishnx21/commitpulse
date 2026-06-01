@@ -10,7 +10,6 @@ import {
   buildCommitClock,
   clearGitHubApiCacheForTests,
   GITHUB_CACHE_TTL_MS,
-  validateGitHubUsername,
   cacheKey,
   displayName,
   fetchOrgMembers,
@@ -1690,35 +1689,6 @@ describe('displayName', () => {
   });
 });
 
-describe('validateGitHubUsername', () => {
-  it('returns true for a valid username', () => {
-    expect(validateGitHubUsername('valid-username-123')).toBe(true);
-  });
-
-  it('returns false for a too long username', () => {
-    expect(validateGitHubUsername('a'.repeat(40))).toBe(false);
-  });
-
-  it('returns false for a username with underscore', () => {
-    expect(validateGitHubUsername('invalid_username')).toBe(false);
-  });
-
-  it('returns false for empty string', () => {
-    expect(validateGitHubUsername('')).toBe(false);
-  });
-
-  it('returns false for leading hyphen', () => {
-    expect(validateGitHubUsername('-octocat')).toBe(false);
-  });
-
-  it('returns false for trailing hyphen', () => {
-    expect(validateGitHubUsername('octocat-')).toBe(false);
-  });
-
-  it('returns false for consecutive hyphens', () => {
-    expect(validateGitHubUsername('octo--cat')).toBe(false);
-  });
-});
 describe('cacheKey', () => {
   it('creates key without year', () => {
     expect(cacheKey('profile', 'DeepSikha')).toBe('profile:deepsikha');
