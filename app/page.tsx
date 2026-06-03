@@ -124,6 +124,14 @@ export default function LandingPage() {
   const badgeUrl = `/api/streak?user=${debouncedUsername}`;
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://commitpulse.vercel.app';
   const markdown = `![CommitPulse](${siteUrl}/api/streak?user=${trimmedUsername})`;
+  const DownloadSVG = () => {
+    const link = document.createElement('a');
+    link.href = badgeUrl;
+    link.download = `${debouncedUsername}-commitpulse-badge.svg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   // Derived — automatically false when debouncedUsername changes
   const badgeLoaded =
@@ -351,6 +359,15 @@ export default function LandingPage() {
                     onLoad={() => setBadgeResult({ username: debouncedUsername, status: 'loaded' })}
                     onError={() => setBadgeResult({ username: debouncedUsername, status: 'error' })}
                   />
+
+                  {badgeLoaded && (
+                    <button
+                      onClick={DownloadSVG}
+                      className="mt-6 px-4 py-2 rounded-lg bg-sky-600 text-sm font-medium text-white hover:bg-sky-800 transition-colors"
+                    >
+                      Download SVG
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div className="flex w-full max-w-2xl flex-col items-center justify-center rounded-3xl border border-dashed border-black/10 bg-black/[0.02] px-6 py-16 text-center dark:border-white/10 dark:bg-white/[0.02]">
