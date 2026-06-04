@@ -200,6 +200,7 @@ URL Parameter > Theme Default > System Fallback
 | `gradient`          | `boolean` | No         | `false`                        | Opt-in to show volumetric gradients on the monolith floor                                                                                                                 |
 | `gradient_stops`    | `string`  | No         | —                              | Comma-separated list of hex colors (e.g. `ff6b35,ff007f`) for custom floor gradient. Requires `gradient=true` and at least two valid colors. Hex prefix `#` is optional.  |
 | `gradient_dir`      | `string`  | No         | `vertical`                     | Direction of the volumetric floor gradient: `vertical` (default), `horizontal`, or `diagonal`.                                                                            |
+
 > All parameters below are optional except `user`. Append them to the base URL as query string key-value pairs (e.g. `?user=YOUR_USERNAME&theme=neon&size=large`). Boolean parameters accept `true` or `false`. Hex color values are provided **without** the `#` prefix.
 
 | Parameter         | Description                                                                                     | Default            | Allowed Values / Constraints                                                    | Example                  |
