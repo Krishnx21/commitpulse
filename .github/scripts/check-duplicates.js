@@ -1,8 +1,6 @@
 const github = require('@actions/github');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
-const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
 function cosineSimilarity(vecA, vecB) {
   let dotProduct = 0.0;
   let normA = 0.0;
@@ -40,8 +38,11 @@ async function run() {
 
   const currentIssueNumber = github.context.payload.issue?.number;
 
+  // Prevent failures when executed from pull_request,
+  // workflow_dispatch, schedule, etc.
   if (!currentIssueNumber) {
-    throw new Error('This workflow must be triggered by an issue event.');
+    console.log('ℹ️ No issue payload detected. Skipping duplicate scan.');
+    return;
   }
 
   console.log('Fetching all open issues...');
@@ -65,7 +66,8 @@ async function run() {
   const currentIssue = openIssues.find((issue) => issue.number === currentIssueNumber);
 
   if (!currentIssue) {
-    throw new Error(`Could not find triggering issue #${currentIssueNumber}`);
+    console.log(`ℹ️ Triggering issue #${currentIssueNumber} is not open. Skipping scan.`);
+    return;
   }
 
   const genAI = new GoogleGenerativeAI(geminiApiKey);
@@ -90,19 +92,13 @@ async function run() {
     issue_number: currentIssue.number,
   });
 
-  console.log('\nComparing triggering issue against existing open issues...');
+  const candidateIssues = openIssues.filter((issue) => issue.number !== currentIssue.number);
+
+  console.log(`Comparing against ${candidateIssues.length} existing issues...`);
 
   let duplicatesCount = 0;
 
-  const candidateIssues = openIssues.filter((issue) => issue.number !== currentIssue.number);
-
-  for (let i = 0; i < candidateIssues.length; i++) {
-    const candidateIssue = candidateIssues[i];
-
-    console.log(
-      `[${i + 1}/${candidateIssues.length}] Comparing against Issue #${candidateIssue.number}`
-    );
-
+  for (const candidateIssue of candidateIssues) {
     const candidateText =
       `Title: ${candidateIssue.title}\nBody: ${candidateIssue.body || ''}`.slice(0, 3000);
 
@@ -112,9 +108,10 @@ async function run() {
       const candidateResult = await model.embedContent(candidateText);
 
       candidateEmbedding = candidateResult.embedding.values;
-    } catch (err) {
+    } catch (error) {
       console.warn(
-        `⚠️ Failed to generate embedding for Issue #${candidateIssue.number}: ${err.message}`
+        `⚠️ Failed to generate embedding for Issue #${candidateIssue.number}:`,
+        error.message
       );
       continue;
     }
@@ -122,49 +119,35 @@ async function run() {
     const similarity = cosineSimilarity(currentEmbedding, candidateEmbedding);
 
     if (similarity < 0.85) {
-      if (i < candidateIssues.length - 1) {
-        await delay(4100);
-      }
       continue;
     }
 
     const similarityPercent = (similarity * 100).toFixed(1);
 
     console.log(
-      `⚠️ Possible Duplicate: #${currentIssue.number} and #${candidateIssue.number} similarity: ${similarityPercent}%`
+      `⚠️ Possible duplicate: #${currentIssue.number} ↔ #${candidateIssue.number} (${similarityPercent}%)`
     );
 
+    const duplicateMessage = `My semantic scan detected that this issue might be a duplicate of #${candidateIssue.number}`;
+
     const alreadyFlagged = existingComments.some(
-      (comment) =>
-        comment.body &&
-        comment.body.includes(
-          `My semantic scan detected that this issue might be a duplicate of #${candidateIssue.number}`
-        )
+      (comment) => comment.body && comment.body.includes(duplicateMessage)
     );
 
     if (alreadyFlagged) {
-      console.log(`ℹ️ Issue #${currentIssue.number} already flagged for #${candidateIssue.number}`);
-
-      if (i < candidateIssues.length - 1) {
-        await delay(4100);
-      }
-
       continue;
     }
 
     const author = currentIssue.user.login;
 
-    const commentBody =
-      `Hey @${author}! 🤖\n\n` +
-      `My semantic scan detected that this issue might be a duplicate of #${candidateIssue.number} ` +
-      `(Similarity: **${similarityPercent}%**).\n\n` +
-      `Please check between these issues and close this one if it is a duplicate.`;
-
     await octokit.rest.issues.createComment({
       owner,
       repo,
       issue_number: currentIssue.number,
-      body: commentBody,
+      body:
+        `Hey @${author}! 🤖\n\n` +
+        `${duplicateMessage} (Similarity: **${similarityPercent}%**).\n\n` +
+        'Please review both issues and close this one if it is a duplicate.',
     });
 
     try {
@@ -174,21 +157,16 @@ async function run() {
         issue_number: currentIssue.number,
         labels: ['possible-duplicate'],
       });
-    } catch (labelErr) {
-      console.warn(
-        `⚠️ Warning: Could not add label 'possible-duplicate' to Issue #${currentIssue.number}:`,
-        labelErr.message
-      );
+    } catch (error) {
+      console.warn(`⚠️ Failed to add label to Issue #${currentIssue.number}:`, error.message);
     }
 
     duplicatesCount++;
-
-    if (i < candidateIssues.length - 1) {
-      await delay(4100);
-    }
   }
 
-  console.log(`\n🎉 Semantic duplicate scan complete! Flagged ${duplicatesCount} new duplicates.`);
+  console.log(
+    `🎉 Semantic duplicate scan complete! Flagged ${duplicatesCount} potential duplicates.`
+  );
 }
 
 run().catch((error) => {
