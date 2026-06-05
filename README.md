@@ -612,7 +612,7 @@ MIT © [Sourav Jha](https://github.com/JhaSourav07)
 ## 👥 Maintainers
 
 - **Sourav Jha** ([@jhasourav07](https://github.com/jhasourav07)) - [LinkedIn](https://linkedin.com/in/souravjhahind)
-- **Aamod Kumar** ([@Aamod007](https://github.com/Aamod007)) - [LinkedIn](https://linkedin.com/in/aamodkumar/)
+- **Aamod Kumar** ([@Aamod007](https://github.com/Aamod007)) - [LinkedIn](https://linkedin.com/in/aamod-kumar/)
 
 For details on the project leads and roles, please see [MAINTAINER.md](MAINTAINER.md).
 
