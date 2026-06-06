@@ -189,3 +189,11 @@ export async function rateLimit(
     reset: now + windowMs,
   };
 }
+
+export function getRateLimitHeaders(result: RateLimitResult) {
+  return {
+    'X-RateLimit-Limit': result.limit.toString(),
+    'X-RateLimit-Remaining': result.remaining.toString(),
+    'X-RateLimit-Reset': result.reset.toString(),
+  };
+}
