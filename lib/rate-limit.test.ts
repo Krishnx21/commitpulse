@@ -265,11 +265,11 @@ describe('RateLimiter', () => {
     await limiter.reset(ip);
 
     const resetCall = fetchMock.mock.calls.find(
-      ([url]: [string]) => typeof url === 'string' && url.includes('/pipeline')
+      (args: unknown[]) => typeof args[0] === 'string' && (args[0] as string).includes('/pipeline')
     );
     expect(resetCall).toBeTruthy();
 
-    const body = JSON.parse(resetCall[1].body as string) as unknown[][];
+    const body = JSON.parse((resetCall![1] as { body: string }).body) as unknown[][];
     expect(body).toEqual([['DEL', `ratelimit_class:${ip}`]]);
 
     // Cleanup
