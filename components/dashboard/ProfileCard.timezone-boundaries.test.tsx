@@ -24,6 +24,8 @@ vi.mock('framer-motion', () => {
       delete domProps.transition;
       delete domProps.whileHover;
       delete domProps.whileTap;
+      delete domProps.whileHover;
+      delete domProps.whileInView;
       return (
         <div ref={ref} {...domProps}>
           {children}
@@ -41,6 +43,8 @@ vi.mock('framer-motion', () => {
       delete domProps.transition;
       delete domProps.whileHover;
       delete domProps.whileTap;
+      delete domProps.whileHover;
+      delete domProps.whileInView;
       return (
         <button ref={ref} {...domProps}>
           {children}
