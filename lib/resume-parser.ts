@@ -172,6 +172,7 @@ export function checkZipRatios(
   let offset = 0;
   const maxFiles = SECURITY_CONFIG.MAX_DOCX_FILES;
 
+fix/5489-resume-parser-isolation
   // Validate buffer has minimum size for zip headers
   if (buffer.length < 22) {
     return { valid: false, reason: 'Buffer too small to be a valid zip file' };
@@ -184,6 +185,41 @@ export function checkZipRatios(
       // Validate we have enough bytes for the header
       if (offset + 46 > buffer.length) {
         return { valid: false, reason: 'Truncated central directory header' };
+
+  if (mimeType === 'application/pdf') {
+    try {
+      if (buffer.toString('utf-8', 0, 4) === '%PDF') {
+        const pdfModule = (await import('pdf-parse')) as Record<string, unknown>;
+
+        console.debug('pdf-parse exports:', Object.keys(pdfModule));
+
+        type PdfParser = (dataBuffer: Buffer, options?: unknown) => Promise<{ text: string }>;
+
+        let pdfParser: PdfParser | null = null;
+
+        if (typeof pdfModule.default === 'function') {
+          pdfParser = pdfModule.default as PdfParser;
+        } else if (typeof (pdfModule as unknown) === 'function') {
+          pdfParser = pdfModule as unknown as PdfParser;
+        } else {
+          const nestedDefault = (pdfModule.default as Record<string, unknown> | undefined)?.default;
+
+          if (typeof nestedDefault === 'function') {
+            pdfParser = nestedDefault as PdfParser;
+          }
+        }
+
+        if (!pdfParser) {
+          throw new TypeError(
+            `Unable to resolve pdf-parse export. Available keys: ${Object.keys(pdfModule).join(', ')}`
+          );
+        }
+
+        const data = await pdfParser(buffer);
+        rawText = data.text;
+      } else {
+        rawText = buffer.toString('utf-8');
+main
       }
 
       const compressedSize = buffer.readUInt32LE(offset + 20);
@@ -252,6 +288,7 @@ export function checkZipRatios(
     } else {
       offset++;
     }
+ fix/5489-resume-parser-isolation
   }
 
   // Also check Local File Headers if Central Directory scan was empty (e.g. malformed or partial zip)
@@ -312,6 +349,18 @@ export function checkZipRatios(
           return { valid: false, reason: 'Invalid header structure' };
         }
         offset = nextOffset;
+
+  } else if (
+    mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  ) {
+    try {
+      if (buffer.toString('utf-8', 0, 2) === 'PK') {
+        const mammothModule = await import('mammoth');
+        const mammothParser = ((mammothModule as unknown as { default?: unknown }).default ||
+          mammothModule) as typeof mammothModule;
+        const result = await mammothParser.extractRawText({ buffer });
+        rawText = result.value;
+ main
       } else {
         offset++;
       }
